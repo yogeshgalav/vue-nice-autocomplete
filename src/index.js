@@ -1,9 +1,9 @@
-import VueNiceValidate from "./VueNiceValidate.js";
+import VueNiceAutocomplete from "./VueNiceAutocomplete.js";
 
 function install(Vue) {
   if (install.installed) return;
   install.installed = true;
-  Vue.mixin(VueNiceValidate);
+  Vue.use(VueNiceAutocomplete);
 }
 
 const plugin = {
@@ -20,6 +20,6 @@ if (GlobalVue) {
   GlobalVue.use(plugin);
 }
 
-VueNiceValidate.install = install;
+VueNiceAutocomplete.install = install;
 
-export default VueNiceValidate;
+export default VueNiceAutocomplete;
