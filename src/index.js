@@ -1,4 +1,4 @@
-import VueNiceAutocomplete from "./VueNiceAutocomplete.js";
+import VueNiceAutocomplete from "./VueNiceAutocomplete.vue";
 
 function install(Vue) {
   if (install.installed) return;
