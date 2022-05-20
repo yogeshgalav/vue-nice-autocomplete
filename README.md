@@ -1,4 +1,4 @@
 # Vue Nice Autocomplete
 
 ## Image
-<img src="auto.png" width="50%"/>
+<img src="Auto.png" width="50%"/>
