@@ -1,233 +1,180 @@
 <template>
-  <section class="autocomplete">
-    <input
-      v-model="search"
-      :name="name"
-      type="text"
-      class="form-control"
-      :disabled="disabled"
-      :placeholder="placeholder"
-      :readonly="!isAsync"
-      @input="onChange"
-      @keydown.down="onArrowDown"
-      @keydown.up="onArrowUp"
-      @keydown.enter="onEnter"
-      @focus="onFocus"
-    >
-    <transition name="fade">
-      <ul
-        v-if="isOpen===true"
-        id="autocomplete-results"
-        class="autocomplete-results"
-      >
-        <li
-          v-if="isLoading"
-          class="loading"
-        >
-          {{ ('loading...') }}
-        </li>
-        <li
-          v-for="(currentResult, i) in results"
-          :key="i"
-          class="autocomplete-result"
-          :class="{ 'is-active': i === arrowCounter }"
-          @click="setResult(currentResult)"
-        >
-          <slot
-            name="list"
-            v-bind="currentResult"
-          >
-            {{ currentResult[value] }}
-          </slot>
-        </li>
-        <li
-          v-if="createNewItem===true"
-          class="autocomplete-result"
-          @click="createNew"
-        >
-          {{ ('Create New') }}
-        </li>
-      </ul>
-    </transition>
-  </section>
-</template>
-
-<style>
-  .autocomplete {
-    position: relative;
-  }
-
-  .autocomplete-results {
-	display: inline-block !important;
-    padding: 0;
-    margin: 0;
-    border: 1px solid #eeeeee;
-    overflow: auto;
-    width: 100%;
-  }
-
-  .autocomplete-result {
-    list-style: none;
-    text-align: left;
-    padding: 4px 2px;
-    cursor: pointer;
-  }
-
-  .autocomplete-result.is-active,
-  .autocomplete-result:hover {
-    background-color: #10069f;
-    color: white;
-  }
-
-</style>
-<script>
-export default {
-	name: 'Autocomplete',
-
+	<div class="my-2">
+	  <input
+		v-model="search" type="text" class="text-base font-medium block w-full rounded-md border transition ease-in-out focus:ring-1 border-gray-300 border-solid py-2 px-3 text-gray-700 placeholder-gray-400 focus:border-blue-200 focus:ring-blue-500 focus:outline-none "
+		:name="name" @input="onChange" @keydown.down="onArrowDown"
+		@keydown.up="onArrowUp" @keydown.enter="onEnter"
+	  >
+	  <ul v-show="isOpen" class="mt-1 border-2 border-slate-50 overflow-auto	shadow-lg rounded list-none">
+		<li v-if="isLoading" class="loading">
+		  Loading results...
+		</li>
+		<li
+		  v-for="(result, i) in results" v-else :key="i"
+		  class=""
+		  :class="[ i === arrowCounter? 'bg-blue-100 text-blue-800': '', 'w-full list-none text-left py-2 px-3 cursor-pointer hover:bg-slate-50 ']"
+		  @click="setResult(result)"
+		>
+		  {{ result[label] }}
+		</li>
+	  </ul>
+	</div>
+  </template>
+  <script>
+  import axios from 'axios';
+  import { defineComponent } from 'vue';
+  
+  export default defineComponent({
 	props: {
-		name: {
-			type: String,
-			required: true,
-			default: () => 'autocomplete',
-		},
-		value: {
-			type: String,
-			required: true,
-			default: () => 'name',
-		},
-		placeholder: {
-			type: String,
-			required: false,
-			default: () => '',
-		},
-		items: {
-			type: Array,
-			required: true,
-			default: () => [],
-		},
-		isAsync: {
-			type: Boolean,
-			required: false,
-			default: true,
-		},
-		isLoading: {
-			type: Boolean,
-			required: false,
-			default: false,
-		},
-		createNewItem: {
-			type: Boolean,
-			required: false,
-			default: true,
-		},
-		disabled: {
-			type: Boolean,
-			required: false,
-			default: false,
-		},
-		initialValue: {
-			type: Object,
-			required: false,
-			default: () => {},
-		},
+	  name: {
+		type: String,
+		required: false,
+		default: 'autocomplete',
+	  },
+	  source: {
+		type: [String, Array, Function],
+		required: true,
+		default: '',
+	  },
+	  label: {
+		type: String,
+		required: false,
+		default: 'name',
+	  },
+	  responseProperty: {
+		type: String,
+		required: false,
+		default: 'name',
+	  },
 	},
-	$_veeValidate: {
-		value () {
-			return this.search;
-		}
-	},
+	emits:['change'],
 	data() {
-		return {
-			isOpen: false,
-			results: [],
-			result:{},
-			search: '',
-			arrowCounter: 0,
-		};
+	  return {
+		isOpen: false,
+		results: [],
+		search: '',
+		error: null,
+		loading: false,
+		arrowCounter: -1,
+	  };
 	},
-	watch:{
-		items(val){
-			this.results = val;
-			if(this.isAsync===true){
-				this.isOpen=true;
-			}
-		},
-		initialValue(val){
-			if(val && !this.search){
-				this.result = Object.assign({},val);
-				this.search = this.result[this.value];
-			}
-		}
-	},
-	updated() {
-		if(this.initialValue && this.search===''){
-			this.result = Object.assign({},this.initialValue);
-			this.search = this.result[this.value];
-		}
+	computed: {
+	  showResults() {
+		return Array.isArray(this.results) || this.hasError
+	  },
+	  noResults() {
+		return Array.isArray(this.results) && this.results.length === 0
+	  },
+	  isLoading() {
+		return this.loading === true
+	  },
+	  hasError() {
+		return this.error !== null
+	  },
 	},
 	mounted() {
-		if(this.initialValue && this.search===''){
-			this.result = Object.assign({},this.initialValue);
-			this.search = this.result[this.value];
-		}
-		this.results = this.items;
-		document.addEventListener('click', this.handleClickOutside);
+	  document.addEventListener('click', this.handleClickOutside)
 	},
-	destroyed() {
-		document.removeEventListener('click', this.handleClickOutside);
+	unmounted() {
+	  document.removeEventListener('click', this.handleClickOutside)
 	},
 	methods: {
-		onChange() {
-			if(this.isAsync===false){
-				this.results = this.results.filter(node=>node.name.indexOf(this.search) !== -1);
-				return true;
-			}
-			// Let's warn the parent that a change was made
-			this.$emit('input', this.search);
-		},
-		setResult(result) {
-			this.$emit('selected', result);
-			this.search = result[this.value];
-			this.isOpen = false;
-		},
-		createNew() {
-			if(this.createNewItem===false){
-				return false;
-			}
-			this.$emit('selectNew', this.search);
-			this.isOpen = false;
-		},
-		onArrowDown() {
-			if (this.arrowCounter < this.results.length) {
-				this.arrowCounter = this.arrowCounter + 1;
-			}
-		},
-		onArrowUp() {
-			if (this.arrowCounter > 0) {
-				this.arrowCounter = this.arrowCounter -1;
-			}
-		},
-		onEnter() {
-			this.$emit('selected', this.results[this.arrowCounter]);
-			this.search = this.results[this.arrowCounter][this.value];
-			this.isOpen = false;
-			this.arrowCounter = -1;
-		},
-		handleClickOutside(evt) {
-			if(this.createNewItem===false || this.isOpen === false){
-				return false;
-			}
-			if (!this.$el.contains(evt.target)) {
-				this.$emit('selectNew', this.search);
-				this.isOpen = false;
-				this.arrowCounter = -1;
-			}
-		},
-		onFocus(){
-			if(this.isAsync===false){
-				this.isOpen=true;
-			}
+	  /**
+	   * Make an http request for results
+	   * @param {String} url
+	   */
+	  request(url) {
+		this.results = [];
+		this.results.push({id : 0 , name: this.search})
+		return axios.get(url)
+		  .then(response => {
+			this.results = this.results.concat(this.getResults(response));
+			this.emitRequestResultEvent();
+			this.loading = false
+		  })
+		  .catch(error => {
+			this.error = error.message
+			this.loading = false
+		  })
+	  },
+	  getResults (response) {
+		if (this.responseProperty) {
+			let foundObj;
+			JSON.stringify(response, (_, nestedValue) => {
+			  if (nestedValue && nestedValue[this.responseProperty]) 
+				foundObj = nestedValue[this.responseProperty];
+			  
+			  return nestedValue;
+			});
+			return foundObj;
 		}
-	}
-};
-</script>
+		if(Array.isArray(response)){
+			return response;
+		}
+		return []
+	  },
+	   /**
+	   * Emit an event based on the request results
+	   */
+	   emitRequestResultEvent () {
+		if (this.results.length === 0) 
+		  this.$emit('noResults', {query: this.search})
+		 else 
+		  this.$emit('results', {results: this.results})
+		
+	  },
+	  setResult(result) {
+		this.search = result[this.label];
+		this.isOpen = false;
+		this.$emit('change', result);
+	  },
+	  arrayLikeSearch(items) {
+		this.results = items.filter((item) => {
+		  return item[this.label].toLowerCase().indexOf(this.search.toLowerCase()) > -1;
+		});
+	  },
+	  onChange() {
+		if (!this.source || !this.search) 
+		  return false;
+		 
+		this.isOpen = true;
+		switch (true) {
+		  case typeof this.source === 'string':
+			return this.request(this.source + this.search);
+		  case typeof this.source === 'function':
+			return this.source(this.search);
+		  case Array.isArray(this.source):
+			return this.arrayLikeSearch(this.source);
+		  default:
+			throw new Error("typeof source is "+(typeof this.source))
+		}
+	  },
+	  handleClickOutside(event) {
+		if (!this.$el.contains(event.target)) 
+		  this.onEnter();
+		
+	  },
+	  onArrowDown() {
+		if (this.arrowCounter < this.results.length) 
+		  this.arrowCounter = this.arrowCounter + 1;
+		
+	  },
+	  onArrowUp() {
+		if (this.arrowCounter > 0) 
+		  this.arrowCounter = this.arrowCounter - 1;
+		
+	  },
+	  onEnter(event) {
+		if(event) event.preventDefault();
+		if(!this.results.length)
+		  this.arrowCounter = -1;
+		else if(this.arrowCounter<0)
+		  this.setResult(this.results[0]);
+		else
+		  this.setResult(this.results[this.arrowCounter]);
+		
+		this.isOpen = false;
+	  },
+	},
+  });
+  </script>
