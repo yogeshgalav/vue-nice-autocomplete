@@ -142,7 +142,10 @@
 		  case typeof this.source === 'string':
 			return this.request(this.source + this.search);
 		  case typeof this.source === 'function':
-			return this.source(this.search);
+			return this.source(this.search).then(response=>{	
+			  this.results = this.results.concat(this.getResults(response));
+			  this.emitRequestResultEvent();
+			});
 		  case Array.isArray(this.source):
 			return this.arrayLikeSearch(this.source);
 		  default:
