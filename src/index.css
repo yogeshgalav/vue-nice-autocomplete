@@ -42,7 +42,7 @@ margin-bottom: 0.5rem; /* 8px */
 .text-left	{
     text-align: left;
 }
-.py-2\.5 {
+.p-2\.5 {
     padding: 0.625rem/* 10px */;
     
 }
@@ -131,4 +131,32 @@ transition-duration: 150ms;
 .outline-none {
     outline: 2px solid transparent;
     outline-offset: 2px;
+}
+
+.relative {
+    position: relative;
+}
+
+.overflow-hidden {
+    overflow: hidden;
+}
+
+.overflow-y-scroll {
+    overflow-y: scroll;
+}
+
+.absolute {
+    position: absolute;
+}
+
+.w-56 {
+    width: 14rem/* 224px */;
+}
+
+.flex{
+    display: flex;
+}
+
+.flex-col{
+    flex-direction: column;
 }
