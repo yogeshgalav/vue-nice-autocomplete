@@ -153,21 +153,29 @@
 		}
 	  },
 	  handleClickOutside(event) {
+		if(!this.isOpen) return false;
+
 		if (!this.$el.contains(event.target)) 
 		  this.onEnter();
 		
 	  },
 	  onArrowDown() {
+		if(!this.isOpen) return false;
+
 		if (this.arrowCounter < this.results.length) 
 		  this.arrowCounter = this.arrowCounter + 1;
 		
 	  },
 	  onArrowUp() {
+		if(!this.isOpen) return false;
+
 		if (this.arrowCounter > 0) 
 		  this.arrowCounter = this.arrowCounter - 1;
 		
 	  },
 	  onEnter(event) {
+		if(!this.isOpen) return false;
+
 		if(event) event.preventDefault();
 		if(!this.results.length)
 		  this.arrowCounter = -1;
