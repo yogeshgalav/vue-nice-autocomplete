@@ -1,16 +1,16 @@
 <template>
 	<div class="autocomplete my-2">
 	  <input
-		v-model="search" type="text" class="text-base font-medium block w-full rounded-md border transition ease-in-out focus:ring-1 border-gray-300 border-solid p-2.5 text-gray-700 placeholder-gray-400 focus:border-blue-200 focus:ring-blue-500 focus:outline-none outline-none"
-		:name="name" @input="onChange" @keydown.down="onArrowDown"
+		v-model="data.search" type="text" class="text-base font-medium block w-full rounded-md border transition ease-in-out focus:ring-1 border-gray-300 border-solid p-2.5 text-gray-700 placeholder-gray-400 focus:border-blue-200 focus:ring-blue-500 focus:outline-none outline-none"
+		:name="props.name" @input="onChange" @keydown.down="onArrowDown"
 		@keydown.up="onArrowUp" @keydown.enter="onEnter"
 	  >
-	  <ul v-show="isOpen" class="autocomplete-results mt-1 border-2 border-gray-50 overflow-auto shadow-lg rounded list-none">
-		<li v-if="isLoading" class="loading">
+	  <ul v-show="data.isOpen" class="autocomplete-results mt-1 border-2 border-gray-50 overflow-auto shadow-lg rounded list-none">
+		<li v-if="data.isLoading" class="loading">
 		  Loading results...
 		</li>
 		<li
-		  v-for="(result, i) in results" v-else :key="i"
+		  v-for="(result, i) in data.results" v-else :key="i"
 		  class="autocomplete-result"
 		  :class="[ i === arrowCounter? 'bg-blue-100 text-blue-800': '', 'w-full	list-none	text-left	p-2.5 cursor-pointer hover:bg-gray-50 ']"
 		  @click="setResult(result)"
@@ -22,12 +22,11 @@
 	  </ul>
 	</div>
   </template>
-  <script>
+  <script setup>
   import axios from 'axios';
-  import { defineComponent } from 'vue';
+  import { computed, onMounted, onUnmounted, reactive } from 'vue';
   
-  export default defineComponent({
-	props: {
+	let props = defineProps({
 	  name: {
 		type: String,
 		required: false,
@@ -46,143 +45,138 @@
 	  responseProperty: {
 		type: String,
 		required: false,
-		default: 'name',
 	  },
-	},
-	emits:['change', 'noResults', 'results'],
-	data() {
-	  return {
+	});
+	const emits = defineEmits(['change', 'noResults', 'results']);
+	let data = reactive({
 		isOpen: false,
 		results: [],
 		search: '',
 		error: null,
 		loading: false,
 		arrowCounter: -1,
-	  };
-	},
-	computed: {
-	  showResults() {
-		return Array.isArray(this.results) || this.hasError
-	  },
-	  noResults() {
-		return Array.isArray(this.results) && this.results.length === 0
-	  },
-	  isLoading() {
-		return this.loading === true
-	  },
-	  hasError() {
-		return this.error !== null
-	  },
-	},
-	mounted() {
-	  document.addEventListener('click', this.handleClickOutside)
-	},
-	unmounted() {
-	  document.removeEventListener('click', this.handleClickOutside)
-	},
-	methods: {
-	  /**
+	});
+	const showResults = computed(()=>{
+		return Array.isArray(data.results) || hasError
+	});
+	const noResults = computed(()=>{
+		return Array.isArray(data.results) && data.results.length === 0
+	});
+	const isLoading = computed(()=>{
+		return data.loading === true
+	});
+	const hasError = computed(()=>{
+		return data.error !== null
+	});
+	  
+	onMounted(()=>{
+	  document.addEventListener('click', handleClickOutside)
+	});
+	onUnmounted(()=>{
+	  document.removeEventListener('click', handleClickOutside)
+	});
+	/**
 	   * Make an http request for results
 	   * @param {String} url
 	   */
-	  request(url) {
-		this.results = [];
-		this.results.push({id : 0 , name: this.search})
-		return axios.get(url)
+	async function request(url) {
+		data.results = [];
+		data.results.push({id : 0 , name: data.search})
+		let response = await axios.get(url)
 		  .then(response => {
-			this.results = this.results.concat(this.getResults(response));
-			this.emitRequestResultEvent();
-			this.loading = false
+			return getResults(response.data)
+		  })
+		  .then(response => {
+			data.results = data.results.concat(response);
+			emitRequestResultEvent();
+			data.loading = false
 		  })
 		  .catch(error => {
-			this.error = error.message
-			this.loading = false
-		  })
-	  },
-	  getResults (response) {
-		if (this.responseProperty) {
-			let foundObj;
-			JSON.stringify(response, (_, nestedValue) => {
-			  if (nestedValue && nestedValue[this.responseProperty]) 
-				foundObj = nestedValue[this.responseProperty];
-			  
-			  return nestedValue;
-			});
-			return foundObj;
+			data.error = error.message
+			data.loading = false
+		  });
+
+		  return response;
+	};
+	function getResults (response) {
+		if (!props.responseProperty) {
+			return response;
 		}
-		return []
-	  },
+		let foundObj = response;
+		props.responseProperty.split('.').forEach(el=>{
+			foundObj = foundObj[el];
+		});
+		return foundObj;
+	};
 	   /**
 	   * Emit an event based on the request results
 	   */
-	   emitRequestResultEvent () {
-		if (this.results.length === 0) 
-		  this.$emit('noResults', {query: this.search})
+	function emitRequestResultEvent () {
+		if (data.results.length === 0) 
+		  emits('noResults', {query: data.search})
 		 else 
-		  this.$emit('results', {results: this.results})
+		  emits('results', {results: data.results})
 		
-	  },
-	  setResult(result) {
-		this.search = result[this.label];
-		this.isOpen = false;
-		this.$emit('change', result);
-	  },
-	  arrayLikeSearch(items) {
-		this.results = items.map(item=>{
+	};
+	function setResult(result) {
+		data.search = result[label];
+		data.isOpen = false;
+		emits('change', result);
+	};
+	function arrayLikeSearch(items) {
+		data.results = items.map(item=>{
 			if(typeof item === 'object') return item;
 			let itemObj = {};
-			itemObj[this.label] = item;
+			itemObj[data.label] = item;
 			return itemObj;
 		}).filter((item) => {
-		  return item[this.label].toLowerCase().indexOf(this.search.toLowerCase()) > -1;
+		  return item[data.label].toLowerCase().indexOf(data.search.toLowerCase()) > -1;
 		});
-	  },
-	  onChange() {
-		if (!this.source || !this.search) 
+	};
+	function onChange() {
+		if (!props.source || !data.search) 
 		  return false;
-		 
-		this.isOpen = true;
+		
+		data.isOpen = true;
 		switch (true) {
-		  case typeof this.source === 'string':
-			return this.request(this.source + this.search);
-		  case typeof this.source === 'function':
-			return this.source(this.search);
-		  case Array.isArray(this.source):
-			return this.arrayLikeSearch(this.source);
+		  case typeof props.source === 'string':
+			return request(props.source + data.search);
+		  case typeof props.source === 'function':
+			return source(data.search);
+		  case Array.isArray(props.source):
+			return arrayLikeSearch(props.source);
 		  default:
-			throw new Error("typeof source is "+(typeof this.source))
+			throw new Error("typeof source is "+(typeof props.source))
 		}
-	  },
-	  handleClickOutside(event) {
-		if(!this.isOpen) return false;
+	};
+	function handleClickOutside(event) {
+		if(!data.isOpen) return false;
   
-		if (!this.$el.contains(event.target)) 
-		  this.onEnter();
+		if (!$el.contains(event.target)) 
+		  onEnter();
 		
-	  },
-	  onArrowDown() {
-		if (this.arrowCounter < this.results.length) 
-		  this.arrowCounter = this.arrowCounter + 1;
+	};
+	function onArrowDown() {
+		if (data.arrowCounter < data.results.length) 
+		data.arrowCounter = data.arrowCounter + 1;
 		
-	  },
-	  onArrowUp() {
-		if (this.arrowCounter > 0) 
-		  this.arrowCounter = this.arrowCounter - 1;
+	};
+	function onArrowUp() {
+		if (data.arrowCounter > 0) 
+		data.arrowCounter = data.arrowCounter - 1;
 		
-	  },
-	  onEnter(event) {
+	};
+	function onEnter(event) {
 		if(event) event.preventDefault();
-		if(!this.results.length)
-		  this.arrowCounter = -1;
-		else if(this.arrowCounter<0)
-		  this.setResult(this.results[0]);
+		if(!data.results.length)
+		data.arrowCounter = -1;
+		else if(data.arrowCounter<0)
+		  setResult(data.results[0]);
 		else
-		  this.setResult(this.results[this.arrowCounter]);
+		  setResult(data.results[data.arrowCounter]);
 		
-		this.isOpen = false;
-	  },
-	},
-  });
+		  data.isOpen = false;
+	};
   </script>
 	
   <style>
