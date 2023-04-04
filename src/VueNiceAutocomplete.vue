@@ -15,7 +15,9 @@
 		  :class="[ i === arrowCounter? 'bg-blue-100 text-blue-800': '', 'w-full	list-none	text-left	p-2.5 cursor-pointer hover:bg-gray-50 ']"
 		  @click="setResult(result)"
 		>
-		  {{ result[label] }}
+			<slot name="result" :result="result">
+				{{ result[label] }}
+			</slot>
 		</li>
 	  </ul>
 	</div>
