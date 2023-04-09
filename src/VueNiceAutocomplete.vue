@@ -81,7 +81,9 @@
 	   */
 	async function request(url) {
 		data.results = [];
-		data.results.push({id : 0 , name: data.search})
+		const newResult = {id : 0};
+      	newResult[props.label || 'name'] = data.search;
+      	this.results.push(newResult);
 		let response = await axios.get(url)
 		  .then(response => {
 			return getResults(response.data)
