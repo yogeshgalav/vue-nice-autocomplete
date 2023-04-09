@@ -16,7 +16,7 @@
 		  @click="setResult(result)"
 		>
 			<slot name="result" :result="result">
-				{{ result[label] }}
+				{{ result[props.label] }}
 			</slot>
 		</li>
 	  </ul>
@@ -98,16 +98,19 @@
 
 		  return response;
 	};
-	function getResults (response) {
-		if (!props.responseProperty) {
-			return response;
-		}
-		let foundObj = response;
-		props.responseProperty.split('.').forEach(el=>{
-			foundObj = foundObj[el];
-		});
-		return foundObj;
-	};
+    function getResults (response) {
+      if (props.responseProperty) {
+          let foundObj;
+          JSON.stringify(response, (_, nestedValue) => {
+            if (nestedValue && nestedValue[props.responseProperty]) 
+              foundObj = nestedValue[props.responseProperty];
+            
+            return nestedValue;
+          });
+          return foundObj;
+      }
+      return []
+    }
 	   /**
 	   * Emit an event based on the request results
 	   */
