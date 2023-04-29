@@ -1,7 +1,7 @@
 <template>
 	<div class="autocomplete my-2">
 	  <input
-		v-model="data.search" type="text" class="text-base font-medium block w-full rounded-md border transition ease-in-out focus:ring-1 border-gray-300 border-solid p-2.5 text-gray-700 placeholder-gray-400 focus:border-blue-200 focus:ring-blue-500 focus:outline-none outline-none"
+		v-model="data.search" type="text" class="text-base font-medium block w-full rounded-md border transition ease-in-out focus:ring-1 border-gray-300 border-solid p-2.5 text-gray-700 placeholder-gray-400 focus:border-blue-200 focus:ring-blue-500 focus:outline-none outline-none" placeholder="Enter text here..."
 		:name="props.name" @input="onChange" @keydown.down="onArrowDown"
 		@keydown.up="onArrowUp" @keydown.enter="onEnter"
 	  >
@@ -25,7 +25,7 @@
   <script setup>
   import axios from 'axios';
   import { computed, onMounted, onUnmounted, reactive } from 'vue';
-  
+
 	let props = defineProps({
 	  name: {
 		type: String,
